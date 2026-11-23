@@ -164,7 +164,8 @@ export default function App() {
 
   if (!session) return <Auth />;
 
-  if (driverAccess !== true) {
+  const isStaff = ["super_admin", "admin", "operations"].includes(profile?.role);
+  if (driverAccess !== true && !isStaff) {
     return (
       <Blocked
         title="Acceso de conductor"
