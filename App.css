@@ -470,3 +470,43 @@ body{background:#edf3f0}
 .app .bottom-nav button.active svg{stroke:#fff}
 .app .request-card,.app .active-ride-card,.app .profile-card{border-left:4px solid #0a6a49}
 @media(max-width:560px){.app>.vuelo-mode-switch{margin:10px 12px 14px}.app .bottom-nav button.active{border-radius:12px}}
+
+
+:root{--green:#087a4b;--green-dark:#075c38;--green-soft:#e8f7ee;--coral:#ff796b;--coral-dark:#e85f53;--coral-soft:#fff0ed;--black:#17372a;--gray:#607368;--border:#d8e7dd;--shadow:0 16px 38px rgba(9,68,43,.10)}
+body{background:#f4f8f5;color:var(--black)}
+.app{background:linear-gradient(180deg,#eaf5ed 0,#f4f8f5 300px,#f4f8f5 100%)}
+.app .topbar{background:#06472f!important;border-color:#0b6846!important}
+.app .topbar .brand strong,.app .topbar .brand span{color:#fff!important}
+.app .welcome-card{background:linear-gradient(135deg,#087a4b 0%,#075c38 100%)!important;border-radius:24px;box-shadow:0 14px 30px #075c3825}
+.app .welcome-card button{background:var(--coral)!important;color:#fff!important;min-height:48px;border-radius:14px}
+.app .page{width:min(820px,calc(100% - 28px));margin:18px auto 26px}
+.app .section-title h1{font-size:clamp(1.55rem,4.5vw,2.15rem);line-height:1.15;letter-spacing:-.04em}
+.app .section-title p{font-size:.95rem;line-height:1.5}
+.app .commission-card,.app .info-card,.app .empty-card,.app .active-ride-card,.app .request-card,.app .profile-card,.app .warning-card,.app .stat-card{border-radius:18px;padding:clamp(16px,3.5vw,22px);box-shadow:0 5px 18px #0b51300c;border-color:#dce9e0}
+.app .request-card{border-top:3px solid var(--coral)}
+.app .request-card>span{display:inline-flex;padding:6px 10px;background:var(--coral-soft);color:var(--coral-dark);border-radius:999px;font-size:.78rem}
+.app .request-card h2{font-size:clamp(1.08rem,3.7vw,1.35rem);line-height:1.35;color:#153d2b}
+.app .mini-grid{gap:9px}
+.app .mini-grid div{background:#f1f7f2;border:1px solid #e2eee5;border-radius:13px;padding:12px}
+.app .mini-grid strong{font-size:1.05rem;color:#075c38}
+.app .request-card label{font-size:.88rem;margin:13px 0 7px}
+.app .request-card input,.app .request-card select,.app .request-card textarea{font-size:16px;min-height:46px;border-radius:12px;border-color:#cfdfd3}
+.app .request-card button{min-height:49px;border-radius:13px;background:var(--green);font-size:.95rem}
+.app .request-card button:hover{background:var(--green-dark)}
+.app .bottom-nav{background:#fff!important;border-top:1px solid #d9e8de!important}
+.app .bottom-nav button{font-size:.78rem;min-height:64px}
+.app .bottom-nav button.active{background:#e8f7ee!important;color:#075c38!important;border-radius:12px;margin:5px}
+.app .bottom-nav button.active svg{stroke:#075c38}
+.app .toast{border-left-color:var(--coral);color:#075c38}
+.app .icon-btn{border-color:#34785b;background:#0b5b3c;color:white}
+.incoming-ride-bubble{position:fixed;z-index:1000;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(92vw,480px);display:flex;align-items:center;gap:11px;padding:13px 14px;background:#fff;border:1px solid #b9ddc7;border-left:5px solid var(--coral);border-radius:18px;box-shadow:0 16px 44px #073e2930;animation:incoming-pop .22s ease-out both}
+.incoming-ride-dot{width:42px;height:42px;flex:0 0 42px;border-radius:14px;background:#fff0ed;color:#e85f53;display:grid;place-items:center}
+.incoming-ride-copy{min-width:0;display:grid;gap:3px;flex:1}
+.incoming-ride-copy strong{font-size:.9rem;color:#075c38}
+.incoming-ride-copy small{font-size:.76rem;color:#5e7065;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px}
+.incoming-ride-copy b{font-size:.9rem;color:#e85f53}
+.incoming-ride-bubble>button:not(.incoming-ride-close){border:0;border-radius:11px;padding:10px 13px;background:#087a4b;color:#fff;font-weight:850}
+.incoming-ride-close{align-self:flex-start;border:0;background:transparent;color:#607368;font-size:21px;line-height:1;padding:0 2px}
+@keyframes incoming-pop{from{opacity:0;transform:translate(-50%,12px) scale(.97)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+@media(max-width:560px){.app .request-card{padding:15px}.app .mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.incoming-ride-bubble{bottom:calc(82px + env(safe-area-inset-bottom));gap:8px;padding:11px}.incoming-ride-copy small{max-width:145px}}
+@media(prefers-reduced-motion:reduce){.incoming-ride-bubble{animation:none}}
