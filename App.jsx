@@ -87,6 +87,7 @@ export default function App() {
   const [profile, setProfile] = useState(null);
   const [settings, setSettings] = useState(null);
   const [online, setOnline] = useState(false);
+  const [driverAccess, setDriverAccess] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState(
     window.location.pathname === "/reset-password" ? "reset" : "home"
@@ -105,6 +106,7 @@ export default function App() {
         loadProfile(newSession.user.id);
       } else {
         setProfile(null);
+        setDriverAccess(null);
       }
     });
 
@@ -147,7 +149,8 @@ export default function App() {
       .eq("user_id", id)
       .maybeSingle();
 
-    setOnline(driver?.is_online === true);
+    setDriverAccess(driver?.status === "approved");
+    setOnline(driver?.status === "approved" && driver?.is_online === true);
   }
 
   function notify(message) {
@@ -161,11 +164,11 @@ export default function App() {
 
   if (!session) return <Auth />;
 
-  if (!["driver", "super_admin", "admin", "operations"].includes(profile?.role)) {
+  if (driverAccess !== true) {
     return (
       <Blocked
         title="Acceso de conductor"
-        text="Esta aplicación es solo para conductores aprobados por Vuelo."
+        text="No hay un perfil de conductor aprobado para esta cuenta. Podés solicitar tu registro desde VUELO."
       />
     );
   }
@@ -197,6 +200,7 @@ export default function App() {
         </button>
       </header>
 
+      <div style={{padding:"8px 16px",textAlign:"right"}}><a href="https://misviajes.vuelonicaragua.online/" style={{fontWeight:700,color:"inherit"}}>Cambiar a modo pasajero ↗</a></div>
       <PostRideSurvey key={session.user.id} userId={session.user.id} notify={notify} />
 
       <main>
