@@ -1384,6 +1384,12 @@ function ActiveRide({ profile, notify }) {
     📍 Abrir punto de recogida en Google Maps
   </a>
 )}
+          {ride.destination_lat != null && ride.destination_lng != null && (
+            <a className="maps-btn" href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ride.destination_lat + "," + ride.destination_lng)}`}
+              target="_blank" rel="noreferrer">
+              Abrir punto B en Google Maps
+            </a>
+          )}
           {ride.destination_reference && <p>Referencia destino: <strong>{ride.destination_reference}</strong></p>}
           {ride.passenger_count && <p>Personas en vehículo: <strong>{ride.passenger_count}</strong></p>}
           {ride.passenger_notes && <p>Notas del pasajero: <strong>{ride.passenger_notes}</strong></p>}
