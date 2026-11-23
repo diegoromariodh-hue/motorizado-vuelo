@@ -442,3 +442,11 @@ button:disabled {
 .status-flow {
   display: block;
 }
+
+/* VUELO: differentiated account modes */
+.vuelo-mode-switch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 16px 16px;padding:13px 15px;border-radius:16px;flex-wrap:wrap;border:1px solid #11623d;background:#075c38;box-shadow:0 5px 16px #063e2712}
+.vuelo-mode-current{font-size:13px;font-weight:800;color:#ffffff}
+.vuelo-mode-button{background:#ffffff;color:#075c38;border:0;border-radius:11px;padding:11px 15px;min-height:44px;font-size:13px;font-weight:800;cursor:pointer}
+.vuelo-mode-button:disabled{opacity:.65;cursor:wait}
+.vuelo-mode-error{flex-basis:100%;color:#fff1f1;margin:0;font-size:13px}
+@media(max-width:380px){.vuelo-mode-switch{margin:8px 10px 12px}.vuelo-mode-button{width:100%}}
