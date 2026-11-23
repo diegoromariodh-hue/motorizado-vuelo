@@ -25,7 +25,7 @@ import "./App.css";
 const LOGO = logoVuelo;
 const SUPPORT = "soporte@vuelonicaragua.online";
 const APP_URL = import.meta.env.VITE_APP_URL || window.location.origin;
-const LANDING_URL = "https://vuelonicaragua.online";
+const LANDING_URL = "https://vuelonicaragua.online/";
 
 const ACTIVE_RIDE_STATUSES = [
   "confirmed",
@@ -799,7 +799,7 @@ function Home({ profile, settings, online, setOnline, notify }) {
   async function shareLanding() {
     const shareData = {
       title: "Vuelo Nicaragua",
-      text: "Únete a Vuelo como conductor o conoce más sobre la plataforma.",
+      text: "Conocé VUELO y descubrí cómo unirte a nuestra comunidad de conductores en Ometepe.",
       url: LANDING_URL,
     };
 
