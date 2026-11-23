@@ -236,7 +236,7 @@ export default function App() {
 
         <button className={view === "earnings" ? "active" : ""} aria-current={view === "earnings" ? "page" : undefined} onClick={() => setView("earnings")}>
           <Wallet size={20} />
-          Finanzas
+          Historial
         </button>
 
         <button className={view === "profile" ? "active" : ""} aria-current={view === "profile" ? "page" : undefined} onClick={() => setView("profile")}>
@@ -1237,42 +1237,26 @@ function Earnings({ profile, notify }) {
 
   async function submitPassengerRating(ride) {
     if (submittedRatings[ride.id]) return;
-
     const stars = ratingStars[ride.id];
-
     if (!stars) {
-      notify("Selecciona una calificación de 1 a 5 estrellas.");
+      notify("Seleccioná de 1 a 5 estrellas.");
       return;
     }
 
-    const { data: driver } = await supabase
-      .from("drivers")
-      .select("id")
-      .eq("user_id", profile.id)
-      .maybeSingle();
-
-    if (!driver?.id) {
-      notify("No se encontró tu perfil de conductor.");
-      return;
-    }
-
-    const { error } = await supabase.from("passenger_ratings").insert([
-      {
-        ride_id: ride.id,
-        driver_id: driver.id,
-        passenger_id: ride.passenger_id,
-        rating: stars,
-        comment: ratingDrafts[ride.id] || null,
-      },
-    ]);
-
+    const { data: savedStars, error } = await supabase.rpc("vuelo_review_ride", {
+      p_ride: ride.id,
+      p_rating: stars,
+      p_comment: ratingDrafts[ride.id] || null,
+      p_as_driver: true,
+    });
     if (error) {
-      alert(error.message);
+      notify(error.message);
       return;
     }
 
+    setRatingStars((prev) => ({ ...prev, [ride.id]: savedStars }));
     setSubmittedRatings((prev) => ({ ...prev, [ride.id]: true }));
-    notify("Calificación enviada.");
+    notify("Reseña guardada.");
   }
 
   const total = rides.reduce(
@@ -1283,7 +1267,7 @@ function Earnings({ profile, notify }) {
   return (
     <section className="page">
       <div className="section-title">
-        <h1>Finanzas</h1>
+        <h1>Historial y ganancias</h1>
         <p>Resumen estimado y viajes finalizados.</p>
       </div>
 
@@ -1345,6 +1329,8 @@ function Earnings({ profile, notify }) {
                 <>
                   <textarea
                     placeholder="Comentario opcional sobre el pasajero..."
+                    maxLength={500}
+                    aria-label="Comentario opcional"
                     value={ratingDrafts[ride.id] || ""}
                     onChange={(e) => setDraft(ride.id, e.target.value)}
                   />
