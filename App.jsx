@@ -215,6 +215,7 @@ export default function App() {
         {view === "active" && <ActiveRide profile={profile} notify={notify} />}
         {view === "earnings" && <Earnings profile={profile} notify={notify} />}
         {view === "profile" && <Profile profile={profile} />}
+        <p className="page"><a href="https://vuelonicaragua.online/#privacidad" target="_blank" rel="noreferrer" style={{color:"#067451",textDecoration:"underline"}}>Aviso de privacidad</a></p>
       </main>
 
       <nav className="bottom-nav" aria-label="Navegación de conductor">
@@ -1408,6 +1409,7 @@ function ActiveRide({ profile, notify }) {
           <button className="dark-btn full-btn" type="button" onClick={toggleLocation}>
             {sharing ? "Dejar de compartir ubicación" : "Compartir ubicación en vivo"}
           </button>
+          <p>Al compartir, el pasajero de este viaje verá tu última ubicación. Podés detener el envío en cualquier momento.</p>
           {sharing && <p role="status">GPS activo mientras mantenés esta pantalla abierta.</p>}
         </div>
       )}
