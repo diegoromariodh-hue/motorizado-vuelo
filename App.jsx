@@ -1040,40 +1040,49 @@ function ActiveRide({ profile, notify }) {
     load();
   }
 
-  async function loc() {
+  const [sharingRideId, setSharingRideId] = useState(null);
+  const rideId = ride?.id;
+  const sharing = Boolean(rideId && rideId === sharingRideId);
+
+  useEffect(() => {
+    if (!sharing) return;
+    let active = true;
+    let sending = false;
+    let lastSent = 0;
+    const watch = navigator.geolocation.watchPosition(async ({ coords }) => {
+      if (!active || document.hidden || sending || Date.now() - lastSent < 8000) return;
+      sending = true;
+      const { error } = await supabase.rpc("vuelo_share_driver_location", {
+        p_ride: rideId,
+        p_lat: coords.latitude,
+        p_lng: coords.longitude,
+      });
+      sending = false;
+      if (!active) return;
+      if (error) {
+        notify("No se pudo compartir la ubicación. Volvé a intentarlo.");
+        setSharingRideId(null);
+      } else {
+        lastSent = Date.now();
+      }
+    }, (error) => {
+      if (!active) return;
+      notify(error.code === 1 ? "Activá el permiso de ubicación para compartir tu GPS." : "No se pudo obtener el GPS. Volvé a intentarlo.");
+      setSharingRideId(null);
+    }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+
+    return () => {
+      active = false;
+      navigator.geolocation.clearWatch(watch);
+    };
+  }, [sharing, rideId]);
+
+  function toggleLocation() {
     if (!navigator.geolocation) {
       notify("GPS no disponible.");
       return;
     }
-
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const { data: driver } = await supabase
-        .from("drivers")
-        .select("id")
-        .eq("user_id", profile.id)
-        .maybeSingle();
-
-      if (!driver?.id) {
-        notify("Tu perfil de conductor aún no está activo.");
-        return;
-      }
-
-      const { error } = await supabase.from("driver_locations").insert([
-        {
-          driver_id: driver.id,
-          ride_id: ride?.id || null,
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        },
-      ]);
-
-      if (error) {
-        notify(error.message);
-        return;
-      }
-
-      notify("Ubicación compartida.");
-    });
+    setSharingRideId(sharing ? null : rideId);
   }
 
   const nextStep = {
@@ -1141,9 +1150,10 @@ function ActiveRide({ profile, notify }) {
             </div>
           )}
 
-          <button className="dark-btn full-btn" onClick={loc}>
-            Compartir ubicación
+          <button className="dark-btn full-btn" type="button" onClick={toggleLocation}>
+            {sharing ? "Dejar de compartir ubicación" : "Compartir ubicación en vivo"}
           </button>
+          {sharing && <p role="status">GPS activo mientras mantenés esta pantalla abierta.</p>}
         </div>
       )}
     </section>
