@@ -87,7 +87,6 @@ export default function App() {
   const [profile, setProfile] = useState(null);
   const [settings, setSettings] = useState(null);
   const [online, setOnline] = useState(false);
-  const [notif, setNotif] = useState(false);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState(
     window.location.pathname === "/reset-password" ? "reset" : "home"
@@ -130,7 +129,6 @@ export default function App() {
       await loadProfile(data.session.user.id);
     }
 
-    setNotif("Notification" in window && Notification.permission === "granted");
     setLoading(false);
   }
 
@@ -202,14 +200,13 @@ export default function App() {
       <PostRideSurvey key={session.user.id} userId={session.user.id} notify={notify} />
 
       <main>
+        <NotificationInbox key={session.user.id} userId={session.user.id} onNavigate={setView} />
         {view === "home" && (
           <Home
             profile={profile}
             settings={settings}
             online={online}
             setOnline={setOnline}
-            notif={notif}
-            setNotif={setNotif}
             notify={notify}
           />
         )}
@@ -248,6 +245,74 @@ export default function App() {
       </nav>
     </div>
   );
+}
+
+function NotificationInbox({userId,onNavigate}) {
+  const [items,setItems]=useState([]);
+  const [errorText,setErrorText]=useState("");
+
+  useEffect(()=>{
+    let active=true;
+    let request=0;
+    async function refresh() {
+      const current=++request;
+      const {data,error}=await supabase.from("vuelo_notifications")
+        .select("id,kind,title,body,read_at").eq("recipient",userId)
+        .order("id",{ascending:false}).limit(20);
+      if (!active || current!==request) return;
+      if (error) setErrorText("No se pudieron actualizar los avisos.");
+      else {
+        setErrorText("");
+        setItems(data||[]);
+      }
+    }
+    const channel=supabase.channel("vuelo-inbox:"+userId)
+      .on("postgres_changes",{event:"*",schema:"public",table:"vuelo_notifications",filter:"recipient=eq."+userId},refresh)
+      .subscribe((status)=>{if(status==="SUBSCRIBED") void refresh();});
+    const timer=window.setInterval(()=>{if(!document.hidden) void refresh();},12000);
+    document.addEventListener("visibilitychange",refresh);
+    void refresh();
+    return ()=>{
+      active=false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange",refresh);
+      void supabase.removeChannel(channel);
+    };
+  },[userId]);
+
+  async function open(item) {
+    const view=({request:"requests",confirmed:"active"})[item.kind];
+    if (!item.read_at) {
+      const read_at=new Date().toISOString();
+      const {error}=await supabase.from("vuelo_notifications").update({read_at}).eq("id",item.id);
+      if (error) {
+        setErrorText("No se pudo marcar el aviso como leído.");
+        return;
+      }
+      setItems((previous)=>previous.map((entry)=>entry.id===item.id?{...entry,read_at}:entry));
+    }
+    if (view) onNavigate(view);
+  }
+
+  const unread=items.filter((item)=>!item.read_at);
+  return <details className="page" style={{background:"#fff",border:"1px solid #dbe5e1",borderRadius:16,padding:12}}>
+    <summary style={{cursor:"pointer",fontWeight:800}}>
+      Notificaciones{unread.length ? " ("+unread.length+")" : ""}
+      <span aria-live="polite">{unread.length ? " · "+unread[0].title : ""}</span>
+    </summary>
+    {errorText && <p role="status">{errorText}</p>}
+    {!items.length && !errorText && <p>Todavía no tenés avisos.</p>}
+    {items.length>0 && <ul style={{listStyle:"none",padding:0}}>
+      {items.map((item)=><li key={item.id} style={{borderTop:"1px solid #dbe5e1",padding:"10px 0"}}>
+        <strong>{item.title}</strong>
+        <p style={{whiteSpace:"pre-wrap",margin:"4px 0",overflowWrap:"anywhere"}}>{item.body}</p>
+        <button className="mini" type="button" onClick={()=>open(item)} hidden={item.kind==="admin" && Boolean(item.read_at)}
+          style={{padding:"8px 12px",background:"#e9fbf3",color:"#067451",border:"1px solid #a9d4c3",borderRadius:10}}>
+          {item.kind==="admin" ? "Marcar como leído" : "Ver viaje"}
+        </button>
+      </li>)}
+    </ul>}
+  </details>;
 }
 
 function PostRideSurvey({ userId, notify }) {
@@ -564,7 +629,7 @@ function Reset() {
   );
 }
 
-function Home({ profile, settings, online, setOnline, notif, setNotif, notify }) {
+function Home({ profile, settings, online, setOnline, notify }) {
   const first = profile?.full_name?.split(" ")[0] || "Conductor";
   const [scheduled, setScheduled] = useState([]);
 
@@ -607,27 +672,7 @@ function Home({ profile, settings, online, setOnline, notif, setNotif, notify })
     notify("Enlace de la landing copiado.");
   }
 
-  async function reqNotif() {
-    if (!("Notification" in window)) {
-      notify("Este navegador no permite notificaciones.");
-      return false;
-    }
-
-    const permission = await Notification.requestPermission();
-    const ok = permission === "granted";
-
-    setNotif(ok);
-    notify(ok ? "Notificaciones activadas." : "Debes activar notificaciones para recibir viajes.");
-
-    return ok;
-  }
-
   async function toggle() {
-    if (!online && !notif) {
-      const ok = await reqNotif();
-      if (!ok) return;
-    }
-
     const { data: driver } = await supabase
       .from("drivers")
       .select("id")
@@ -745,19 +790,6 @@ function Home({ profile, settings, online, setOnline, notif, setNotif, notify })
           </p>
         </div>
       </div>
-
-      {!notif && (
-        <div className="warning-card">
-          <Bell />
-          <div>
-            <h3>Notificaciones Push</h3>
-            <p>
-              Aún estamos preparando las notificaciones push reales. Por ahora, mantén la app abierta para ver solicitudes y cambios en tiempo real.
-            </p>
-            <button onClick={reqNotif}>Activar permiso de notificaciones</button>
-          </div>
-        </div>
-      )}
 
       <div className="quick-grid">
         <InfoCard icon={<Car />} title="Solicitudes" text="Recibe viajes de usuarios cercanos." />
