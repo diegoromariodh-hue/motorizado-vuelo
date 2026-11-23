@@ -1325,7 +1325,6 @@ function ActiveRide({ profile, notify }) {
           user_id,
           display_name,
           vuelo_id,
-          phone,
           rating,
           avatar_url
         )
