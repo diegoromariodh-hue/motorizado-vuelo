@@ -742,7 +742,11 @@ function RideRequests({ profile, notify }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "ride_offers" }, load)
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    const refreshTimer = window.setInterval(load, 12000);
+    return () => {
+      window.clearInterval(refreshTimer);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   async function getDriver() {
@@ -773,25 +777,13 @@ function RideRequests({ profile, notify }) {
       setActiveRide(busy || null);
     }
 
-    const { data } = await supabase
-      .from("rides")
-      .select(`
-        *,
-        passenger:profiles!rides_passenger_id_fkey(
-          id,
-          full_name,
-          vuelo_id,
-          phone,
-          rating,
-          city,
-          avatar_url
-        )
-      `)
-      .eq("status", "searching")
-      .order("requested_departure_at", { ascending: true })
-      .limit(50);
+    if (!driver?.id) {
+      setRides([]);
+      return;
+    }
 
-    setRides(data || []);
+    const { data, error } = await supabase.rpc("vuelo_open_ride_requests");
+    if (!error) setRides(data || []);
   }
 
   function canOfferRide(ride) {
@@ -904,30 +896,7 @@ function RideRequests({ profile, notify }) {
             <h2>
               {ride.pickup_address} → {ride.destination_address}
             </h2>
-{ride.pickup_lat && ride.pickup_lng && (
-  <a
-    className="maps-btn"
-    href={`https://www.google.com/maps?q=${ride.pickup_lat},${ride.pickup_lng}`}
-    target="_blank"
-    rel="noreferrer"
-  >
-    📍 Ver punto GPS en Google Maps
-  </a>
-)}
-            <div className="passenger-mini-card">
-              {ride.passenger?.avatar_url ? (
-                <img src={ride.passenger.avatar_url} alt="Pasajero" />
-              ) : (
-                <div>{firstName(ride.passenger?.full_name)[0]}</div>
-              )}
-              <section>
-                <strong>{firstName(ride.passenger?.full_name)}</strong>
-                <small>{ride.passenger?.vuelo_id || "PAS-000000"} · ⭐ {ride.passenger?.rating || "5.00"}</small>
-                <small>{ride.passenger?.phone || "WhatsApp no registrado"}</small>
-              </section>
-            </div>
-
-            <p>{ride.passenger_notes || "Sin notas adicionales."}</p>
+            <p>La dirección exacta se muestra cuando el pasajero confirma.</p>
 
             <div className="mini-grid">
               <div>
@@ -943,11 +912,6 @@ function RideRequests({ profile, notify }) {
               <div>
                 <strong>{formatDateTime(ride.requested_departure_at)}</strong>
                 <small>Salida</small>
-              </div>
-
-              <div>
-                <strong>{ride.destination_reference || "No indicada"}</strong>
-                <small>Referencia destino</small>
               </div>
 
               <div>
