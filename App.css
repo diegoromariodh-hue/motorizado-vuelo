@@ -552,3 +552,20 @@ body{background:#f4f8f5;color:var(--black)}
 @media(max-width:560px){.global-ride-alert{bottom:calc(82px + env(safe-area-inset-bottom));gap:8px;padding:11px}.global-ride-alert-copy small{max-width:145px}}
 @media(prefers-reduced-motion:reduce){.global-ride-alert{animation:none}}
 
+
+
+/* Stronger coral gradient + calmer, tinted driver cards */
+:root{--coral:#f04438;--coral-dark:#d9362d;--coral-soft:#fff0ed}
+.app .request-card,.app .active-ride-card,.app .history-item{background:linear-gradient(145deg,#f0f8f2 0%,#e8f4eb 100%);border:1px solid #e2eee5;box-shadow:0 3px 14px rgba(8,85,51,.055)}
+.app .request-card{border-top:0;position:relative}
+.app .request-card:before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 5px 5px 0;background:linear-gradient(180deg,#ff7668,#e93632)}
+.app .request-card>span{background:linear-gradient(120deg,#ff786a,#e94338);color:#fff}
+.app .request-card button,.app .welcome-card button{background:linear-gradient(115deg,#ff6b5d,#e93632)!important;color:#fff!important;box-shadow:0 6px 15px #e9363228}
+.app .request-card button:hover,.app .welcome-card button:hover{filter:brightness(.96)}
+.app .mini-grid div{background:rgba(255,255,255,.72);border:0;box-shadow:inset 0 0 0 1px #e4eee6}
+.app .request-card input,.app .request-card select,.app .request-card textarea{background:#fff;border:1px solid #dce9df}
+.app .vuelo-mode-switch{display:flex;align-items:center;justify-content:flex-end;gap:8px;width:min(820px,calc(100% - 28px));margin:8px auto 0;padding:0}
+.app .vuelo-mode-current{font-size:.72rem!important;color:#668071!important;font-weight:650!important;letter-spacing:.01em}
+.app .vuelo-mode-button{font-size:.74rem!important;font-weight:700!important;color:#087a4b!important;background:transparent!important;border:1px solid #cfe2d5!important;border-radius:999px!important;padding:6px 10px!important;min-height:30px;opacity:.82;box-shadow:none!important}
+.app .vuelo-mode-button:hover{background:#e8f7ee!important;opacity:1}
+@media(max-width:560px){.app .vuelo-mode-switch{margin:6px auto 0}.app .vuelo-mode-button{padding:5px 9px!important}}
