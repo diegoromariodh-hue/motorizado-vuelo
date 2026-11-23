@@ -183,7 +183,7 @@ export default function App() {
 
   return (
     <div className="app">
-      {toast && <div className="toast">✅ {toast}</div>}
+      {toast && <div className="toast" role="status">✅ {toast}</div>}
 
       <header className="topbar">
         <div className="brand">
@@ -218,28 +218,28 @@ export default function App() {
         {view === "profile" && <Profile profile={profile} />}
       </main>
 
-      <nav className="bottom-nav">
-        <button className={view === "home" ? "active" : ""} onClick={() => setView("home")}>
+      <nav className="bottom-nav" aria-label="Navegación de conductor">
+        <button className={view === "home" ? "active" : ""} aria-current={view === "home" ? "page" : undefined} onClick={() => setView("home")}>
           <Power size={20} />
           Inicio
         </button>
 
-        <button className={view === "requests" ? "active" : ""} onClick={() => setView("requests")}>
+        <button className={view === "requests" ? "active" : ""} aria-current={view === "requests" ? "page" : undefined} onClick={() => setView("requests")}>
           <MapPin size={20} />
           Viajes
         </button>
 
-        <button className={view === "active" ? "active" : ""} onClick={() => setView("active")}>
+        <button className={view === "active" ? "active" : ""} aria-current={view === "active" ? "page" : undefined} onClick={() => setView("active")}>
           <Navigation size={20} />
           Activo
         </button>
 
-        <button className={view === "earnings" ? "active" : ""} onClick={() => setView("earnings")}>
+        <button className={view === "earnings" ? "active" : ""} aria-current={view === "earnings" ? "page" : undefined} onClick={() => setView("earnings")}>
           <Wallet size={20} />
           Finanzas
         </button>
 
-        <button className={view === "profile" ? "active" : ""} onClick={() => setView("profile")}>
+        <button className={view === "profile" ? "active" : ""} aria-current={view === "profile" ? "page" : undefined} onClick={() => setView("profile")}>
           <User size={20} />
           Perfil
         </button>
@@ -1112,12 +1112,12 @@ function ActiveRide({ profile, notify }) {
     });
   }
 
-  const statusSteps = [
-    { key: "confirmed", label: "Confirmado" },
-    { key: "driver_on_way", label: "Voy en camino" },
-    { key: "driver_arrived", label: "Llegué" },
-    { key: "in_progress", label: "Iniciar viaje" },
-  ];
+  const nextStep = {
+    confirmed: { key: "driver_on_way", label: "Voy en camino" },
+    driver_on_way: { key: "driver_arrived", label: "Llegué" },
+    driver_arrived: { key: "in_progress", label: "Iniciar viaje" },
+    in_progress: { key: "completed", label: "Finalizar viaje" },
+  }[ride?.status];
 
   return (
     <section className="page">
@@ -1169,21 +1169,13 @@ function ActiveRide({ profile, notify }) {
           {ride.passenger_notes && <p>Notas del pasajero: <strong>{ride.passenger_notes}</strong></p>}
           <p>Estado actual: <strong>{statusLabel(ride.status)}</strong></p>
 
-          <div className="status-flow">
-            {statusSteps.map((step) => (
-              <button
-                key={step.key}
-                className={ride.status === step.key ? "status-current" : "status-next"}
-                disabled={statusSteps.findIndex(({ key }) => key === ride.status) + 1 !== statusSteps.indexOf(step)}
-                onClick={() => status(step.key)}
-              >
-                {step.label}
+          {nextStep && (
+            <div className="status-flow">
+              <button type="button" className={nextStep.key === "completed" ? "status-finish" : "status-next"} onClick={() => status(nextStep.key)}>
+                {nextStep.label}
               </button>
-            ))}
-            <button className="status-finish" disabled={ride.status !== "in_progress"} onClick={() => status("completed")}>
-              Finalizar viaje
-            </button>
-          </div>
+            </div>
+          )}
 
           <button className="dark-btn full-btn" onClick={loc}>
             Compartir ubicación
