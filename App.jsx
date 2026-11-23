@@ -247,6 +247,87 @@ export default function App() {
   );
 }
 
+function RideChat({ rideId, userId }) {
+  const [messages,setMessages]=useState([]);
+  const [draft,setDraft]=useState("");
+  const [sending,setSending]=useState(false);
+  const [readError,setReadError]=useState(false);
+  const [sendError,setSendError]=useState("");
+  const pending=React.useRef(null);
+
+  useEffect(()=>{
+    let active=true;
+    let version=0;
+    async function load() {
+      const current=++version;
+      const {data,error}=await supabase.from("ride_messages")
+        .select("id,sender_id,message,created_at").eq("ride_id",rideId)
+        .order("created_at",{ascending:false}).order("id",{ascending:false}).limit(50);
+      if (!active || current!==version) return;
+      setReadError(Boolean(error));
+      if (!error) setMessages((data||[]).reverse());
+    }
+    const channel=supabase.channel("ride-chat:"+rideId)
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"ride_messages",filter:"ride_id=eq."+rideId},load)
+      .subscribe((status)=>{if(status==="SUBSCRIBED") void load();});
+    const timer=window.setInterval(()=>{if(!document.hidden) void load();},6000);
+    void load();
+    return ()=>{
+      active=false;
+      window.clearInterval(timer);
+      void supabase.removeChannel(channel);
+    };
+  },[rideId]);
+
+  async function send(event) {
+    event.preventDefault();
+    const message=draft.trim();
+    if (!message || sending) return;
+    if (pending.current?.message!==message) pending.current={message,id:crypto.randomUUID()};
+    setSending(true);
+    setSendError("");
+    try {
+      const {error}=await supabase.rpc("vuelo_send_ride_message",{p_ride:rideId,p_message:message,p_id:pending.current.id});
+      if (error) {
+        setSendError(error.message);
+        return;
+      }
+      const id=pending.current.id;
+      setMessages((previous)=>previous.some((item)=>item.id===id)?previous:[...previous,{id,message,sender_id:userId}]);
+      pending.current=null;
+      setDraft("");
+    } catch {
+      setSendError("No se pudo confirmar el envío. Podés volver a intentarlo.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return <section className="rating-box" aria-label="Chat del viaje">
+    <h3>Chat del viaje</h3>
+    {readError && <p role="status">No pudimos actualizar el chat.</p>}
+    {messages.length===0 && !readError && <p>Usá este chat para coordinar la recogida.</p>}
+    {messages.length>0 && <ul role="log" aria-label="Mensajes" style={{listStyle:"none",padding:0,maxHeight:260,overflowY:"auto"}}>
+      {messages.map((item)=><li key={item.id} style={{background:item.sender_id===userId?"#dff5ec":"#fff",borderRadius:12,padding:10,marginBottom:6,overflowWrap:"anywhere",whiteSpace:"pre-wrap"}}>
+        <strong>{item.sender_id===userId?"Vos":"Pasajero"}</strong>
+        <div>{item.message}</div>
+      </li>)}
+    </ul>}
+    <form onSubmit={send}>
+      <div className="row-actions">
+        {["Voy en camino","No encuentro la dirección","Estoy en el punto"].map((message)=><button key={message} type="button" disabled={sending}
+          onClick={()=>setDraft(message)} style={{margin:3,padding:8,borderRadius:10,border:"1px solid #a9d4c3",background:"#fff",color:"#067451"}}>{message}</button>)}
+      </div>
+      <textarea aria-label="Mensaje del viaje" placeholder="Escribí un mensaje" maxLength={500}
+        value={draft} onChange={(event)=>setDraft(event.target.value)} disabled={sending} />
+      {sendError && <p role="alert">{sendError}</p>}
+      <button type="submit" className="send-rating-btn" disabled={sending || !draft.trim()}>
+        {sending?"Enviando…":"Enviar mensaje"}
+      </button>
+    </form>
+  </section>;
+}
+
 function NotificationInbox({userId,onNavigate}) {
   const [items,setItems]=useState([]);
   const [errorText,setErrorText]=useState("");
@@ -281,7 +362,7 @@ function NotificationInbox({userId,onNavigate}) {
   },[userId]);
 
   async function open(item) {
-    const view=({request:"requests",confirmed:"active"})[item.kind];
+    const view=({request:"requests",confirmed:"active",chat:"active"})[item.kind];
     if (!item.read_at) {
       const read_at=new Date().toISOString();
       const {error}=await supabase.from("vuelo_notifications").update({read_at}).eq("id",item.id);
@@ -1315,6 +1396,8 @@ function ActiveRide({ profile, notify }) {
               </button>
             </div>
           )}
+
+          <RideChat key={ride.id} rideId={ride.id} userId={profile.id} />
 
           <button className="dark-btn full-btn" type="button" onClick={toggleLocation}>
             {sharing ? "Dejar de compartir ubicación" : "Compartir ubicación en vivo"}
