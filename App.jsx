@@ -1,5 +1,5 @@
 import logoVuelo from "./logoVuelo.png";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   Car,
@@ -269,7 +269,7 @@ export default function App() {
           />
         )}
 
-        {view === "requests" && <RideRequests profile={profile} notify={notify} />}
+        {view === "requests" && <RideRequests profile={profile} notify={notify} onNavigate={setView} />}
         {view === "active" && <ActiveRide profile={profile} notify={notify} />}
         {view === "earnings" && <Earnings profile={profile} notify={notify} />}
         {view === "profile" && <Profile profile={profile} />}
@@ -1030,13 +1030,16 @@ function InstallReminder({ notify }) {
   );
 }
 
-function RideRequests({ profile, notify }) {
+function RideRequests({ profile, notify, onNavigate }) {
   const [rides, setRides] = useState([]);
   const [amount, setAmount] = useState({});
   const [eta, setEta] = useState({});
   const [msg, setMsg] = useState({});
   const [driverId, setDriverId] = useState(null);
   const [activeRide, setActiveRide] = useState(null);
+  const [incomingNotice, setIncomingNotice] = useState(null);
+  const knownRideIds = useRef(null);
+  const noticeTimer = useRef(null);
 
   useEffect(() => {
     load();
@@ -1051,6 +1054,7 @@ function RideRequests({ profile, notify }) {
     return () => {
       window.clearInterval(refreshTimer);
       supabase.removeChannel(channel);
+      window.clearTimeout(noticeTimer.current);
     };
   }, []);
 
@@ -1088,7 +1092,22 @@ function RideRequests({ profile, notify }) {
     }
 
     const { data, error } = await supabase.rpc("vuelo_open_ride_requests");
-    if (!error) setRides(data || []);
+    if (!error) {
+      const nextRides = data || [];
+      const previousIds = knownRideIds.current;
+      if (previousIds) {
+        const fresh = nextRides.filter((ride) => !previousIds.has(ride.id));
+        if (fresh.length) {
+          const newest = fresh[0];
+          setIncomingNotice({ id: newest.id, route: `${newest.pickup_address} → ${newest.destination_address}`, price: newest.passenger_offer });
+          if (navigator.vibrate) navigator.vibrate([180, 80, 180]);
+          window.clearTimeout(noticeTimer.current);
+          noticeTimer.current = window.setTimeout(() => setIncomingNotice(null), 9000);
+        }
+      }
+      knownRideIds.current = new Set(nextRides.map((ride) => ride.id));
+      setRides(nextRides);
+    }
   }
 
   function canOfferRide(ride) {
@@ -1164,6 +1183,12 @@ function RideRequests({ profile, notify }) {
 
   return (
     <section className="page">
+      {incomingNotice && <div className="incoming-ride-bubble" role="status">
+        <span className="incoming-ride-dot"><Bell size={19}/></span>
+        <div className="incoming-ride-copy"><strong>¡Nueva solicitud de viaje!</strong><small>{incomingNotice.route}</small><b>C${incomingNotice.price}</b></div>
+        <button type="button" onClick={() => { setIncomingNotice(null); onNavigate("requests"); document.querySelector('[data-ride-id="' + incomingNotice.id + '"]')?.scrollIntoView({behavior:"smooth",block:"center"}); }}>Ver</button>
+        <button className="incoming-ride-close" type="button" aria-label="Cerrar aviso" onClick={() => setIncomingNotice(null)}>×</button>
+      </div>}
       <div className="section-title">
         <h1>Solicitudes disponibles</h1>
         <p>
@@ -1196,7 +1221,7 @@ function RideRequests({ profile, notify }) {
 
       <div className="requests-list">
         {rides.map((ride) => (
-          <div className="request-card" key={ride.id}>
+          <div className="request-card" key={ride.id} data-ride-id={ride.id}>
             <span>{isScheduledRide(ride) ? "Viaje programado" : "Nuevo viaje"}</span>
             <h2>
               {ride.pickup_address} → {ride.destination_address}
