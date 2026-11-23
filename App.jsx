@@ -1,3 +1,4 @@
+import logoVuelo from "./logoVuelo.png";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Bell,
@@ -21,7 +22,7 @@ import {
 import { supabase } from "./supabaseClient";
 import "./App.css";
 
-const LOGO = "/logoVuelo.png";
+const LOGO = logoVuelo;
 const SUPPORT = "soporte@vuelonicaragua.online";
 const APP_URL = import.meta.env.VITE_APP_URL || window.location.origin;
 const LANDING_URL = "https://vuelonicaragua.online";
