@@ -1321,9 +1321,9 @@ function ActiveRide({ profile, notify }) {
       .from("rides")
       .select(`
         *,
-        passenger:profiles!rides_passenger_id_fkey(
-          id,
-          full_name,
+        passenger:passenger_public_profiles!rides_passenger_public_profile_fkey(
+          user_id,
+          display_name,
           vuelo_id,
           phone,
           rating,
@@ -1447,12 +1447,12 @@ function ActiveRide({ profile, notify }) {
             {ride.passenger?.avatar_url ? (
               <img src={ride.passenger.avatar_url} alt="Pasajero" />
             ) : (
-              <div>{firstName(ride.passenger?.full_name)[0]}</div>
+              <div>{firstName(ride.passenger?.display_name)[0]}</div>
             )}
             <section>
-              <h3>{firstName(ride.passenger?.full_name)}</h3>
+              <h3>{firstName(ride.passenger?.display_name)}</h3>
               <p>{ride.passenger?.vuelo_id || "PAS-000000"} · ⭐ {ride.passenger?.rating || "5.00"}</p>
-              <p>{ride.passenger?.phone || "WhatsApp no registrado"}</p>
+              <p>Comunicación mediante el chat de VUELO</p>
             </section>
           </div>
 
@@ -1526,9 +1526,9 @@ function Earnings({ profile, notify }) {
       .from("rides")
       .select(`
         *,
-        passenger:profiles!rides_passenger_id_fkey(
-          id,
-          full_name,
+        passenger:passenger_public_profiles!rides_passenger_public_profile_fkey(
+          user_id,
+          display_name,
           vuelo_id,
           rating,
           avatar_url
@@ -1641,10 +1641,10 @@ function Earnings({ profile, notify }) {
               {ride.passenger?.avatar_url ? (
                 <img src={ride.passenger.avatar_url} alt="Pasajero" />
               ) : (
-                <div>{firstName(ride.passenger?.full_name)[0]}</div>
+                <div>{firstName(ride.passenger?.display_name)[0]}</div>
               )}
               <section>
-                <strong>{firstName(ride.passenger?.full_name)}</strong>
+                <strong>{firstName(ride.passenger?.display_name)}</strong>
                 <small>{ride.passenger?.vuelo_id || "PAS-000000"} · ⭐ {ride.passenger?.rating || "5.00"}</small>
               </section>
             </div>
