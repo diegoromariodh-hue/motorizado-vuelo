@@ -89,9 +89,7 @@ export default function App() {
   const [online, setOnline] = useState(false);
   const [driverAccess, setDriverAccess] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState(
-    window.location.pathname === "/reset-password" ? "reset" : "home"
-  );
+  const [view, setView] = useState(() => window.location.pathname === "/reset-password" ? "reset" : (sessionStorage.getItem("vuelo-driver-view") || "home"));
   const [toast, setToast] = useState("");
   const [rideAlert, setRideAlert] = useState(null);
   const rideAlertTimer = useRef(null);
@@ -99,6 +97,10 @@ export default function App() {
   const [switchingMode, setSwitchingMode] = useState(false);
   const [handoffError, setHandoffError] = useState("");
   const [handoffAttempted, setHandoffAttempted] = useState(false);
+
+  useEffect(() => {
+    if (view !== "reset") sessionStorage.setItem("vuelo-driver-view", view);
+  }, [view]);
 
   async function switchMode() {
     if (switchingMode) return;
