@@ -245,7 +245,7 @@ export default function App() {
           <img src={LOGO} alt="Vuelo" />
           <div>
             <strong>Vuelo</strong>
-            <span>Driver</span>
+            <span>Conductor</span>
           </div>
         </div>
 
@@ -590,7 +590,7 @@ function Loading() {
   return (
     <div className="center">
       <RefreshCcw className="spin" />
-      <p>Cargando Vuelo Driver...</p>
+      <p>Cargando Vuelo Conductor...</p>
     </div>
   );
 }
@@ -650,7 +650,7 @@ function Auth() {
       <form className="auth-card" onSubmit={submit}>
         <img src={LOGO} alt="Vuelo" />
 
-        <h1>{mode === "forgot" ? "Recuperar contraseña" : "Vuelo Driver"}</h1>
+        <h1>{mode === "forgot" ? "Recuperar contraseña" : "Vuelo Conductor"}</h1>
 
         <p>
           {mode === "forgot"
@@ -978,7 +978,7 @@ function InstallReminder({ notify }) {
 
       if (choice.outcome === "accepted") {
         setShow(false);
-        notify("Vuelo Driver se está instalando.");
+        notify("Vuelo Conductor se está instalando.");
       }
 
       setPrompt(null);
@@ -1010,7 +1010,7 @@ function InstallReminder({ notify }) {
       </div>
 
       <div>
-        <h3>Instala Vuelo Driver</h3>
+        <h3>Instala Vuelo Conductor</h3>
         <p>
           Agrega la app a tu pantalla de inicio para recibir solicitudes más rápido.
         </p>
