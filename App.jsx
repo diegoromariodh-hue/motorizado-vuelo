@@ -804,7 +804,7 @@ function RideRequests({ profile, notify }) {
     const offerAmount = Number(amount[ride.id] || ride.passenger_offer);
     const estimatedTime = Number(eta[ride.id] || 10);
 
-    if (!offerAmount) {
+    if (!Number.isFinite(offerAmount) || offerAmount <= 0 || !Number.isInteger(estimatedTime) || estimatedTime <= 0) {
       notify("Ingresa una oferta válida.");
       return;
     }
@@ -823,13 +823,13 @@ function RideRequests({ profile, notify }) {
 
     const { data: previousOffers } = await supabase
       .from("ride_offers")
-      .select("id,status")
+      .select("id,status,expires_at")
       .eq("ride_id", ride.id)
       .eq("driver_id", driver.id)
       .order("created_at", { ascending: false });
 
     const acceptedOffer = (previousOffers || []).find((item) => item.status === "accepted");
-    const pendingOffers = (previousOffers || []).filter((item) => item.status === "pending");
+    const pendingOffers = (previousOffers || []).filter((item) => item.status === "pending" && (!item.expires_at || Date.parse(item.expires_at) > Date.now()));
 
     if (acceptedOffer) {
       notify("Tu oferta ya fue aceptada para este viaje.");
@@ -989,7 +989,7 @@ function RideRequests({ profile, notify }) {
               onChange={(e) => setMsg({ ...msg, [ride.id]: e.target.value })}
             />
 
-            <button onClick={() => offer(ride)}>Enviar oferta</button>
+            <button onClick={() => offer(ride)}>{amount[ride.id] && Number(amount[ride.id]) !== Number(ride.passenger_offer) ? "Enviar contraoferta" : "Ofrecer la tarifa del pasajero"}</button>
           </div>
         ))}
       </div>
@@ -1046,10 +1046,11 @@ function ActiveRide({ profile, notify }) {
   }
 
   async function status(nextStatus) {
-    const { error } = await supabase
-      .from("rides")
-      .update({ status: nextStatus })
-      .eq("id", ride.id);
+    const { error } = await supabase.rpc("vuelo_advance_ride", {
+      p_ride_id: ride.id,
+      p_expected: ride.status,
+      p_next: nextStatus,
+    });
 
     if (error) {
       alert(error.message);
@@ -1173,12 +1174,13 @@ function ActiveRide({ profile, notify }) {
               <button
                 key={step.key}
                 className={ride.status === step.key ? "status-current" : "status-next"}
+                disabled={statusSteps.findIndex(({ key }) => key === ride.status) + 1 !== statusSteps.indexOf(step)}
                 onClick={() => status(step.key)}
               >
                 {step.label}
               </button>
             ))}
-            <button className="status-finish" onClick={() => status("completed")}>
+            <button className="status-finish" disabled={ride.status !== "in_progress"} onClick={() => status("completed")}>
               Finalizar viaje
             </button>
           </div>
