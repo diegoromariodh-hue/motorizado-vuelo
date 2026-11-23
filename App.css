@@ -450,3 +450,23 @@ button:disabled {
 .vuelo-mode-button:disabled{opacity:.65;cursor:wait}
 .vuelo-mode-error{flex-basis:100%;color:#fff1f1;margin:0;font-size:13px}
 @media(max-width:380px){.vuelo-mode-switch{margin:8px 10px 12px}.vuelo-mode-button{width:100%}}
+
+
+/* VUELO CONDUCTOR — dark professional cockpit */
+body{background:#edf3f0}
+.app{background:linear-gradient(180deg,#d9e9e0 0,#edf3f0 280px,#edf3f0 100%)}
+.app>.topbar{background:#063f2a!important;border-bottom:1px solid #0c6847!important;box-shadow:0 4px 18px #063f2a22}
+.app>.topbar .brand strong,.app>.topbar .brand span{color:#fff!important}
+.app>.topbar .brand span{font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:11px;opacity:.85}
+.app>.topbar .icon-btn{color:#fff!important;border-color:#6ca88a!important;background:#145b40!important}
+.app>.vuelo-mode-switch{background:#075438;border:1px solid #0d704d;border-radius:13px;margin:12px 14px 16px;padding:12px 14px;box-shadow:0 7px 20px #063f2a26}
+.app>.vuelo-mode-switch .vuelo-mode-current{color:#fff;font-size:14px}
+.app>.vuelo-mode-switch .vuelo-mode-button{background:#fff;color:#06472e;font-weight:900}
+.app .welcome-card{background:linear-gradient(140deg,#053d2b 0%,#086043 75%,#0b7550 100%)!important;box-shadow:0 12px 25px #053d2b28}
+.app .welcome-card button{background:#e9fff2;color:#06472e}
+.app .bottom-nav{background:#073f2c!important;border-top:1px solid #116d4c!important;box-shadow:0 -4px 16px #052b1e20}
+.app .bottom-nav button{color:#c1dbcd!important}
+.app .bottom-nav button.active{background:#146b4a!important;color:#fff!important}
+.app .bottom-nav button.active svg{stroke:#fff}
+.app .request-card,.app .active-ride-card,.app .profile-card{border-left:4px solid #0a6a49}
+@media(max-width:560px){.app>.vuelo-mode-switch{margin:10px 12px 14px}.app .bottom-nav button.active{border-radius:12px}}
