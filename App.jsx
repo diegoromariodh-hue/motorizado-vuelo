@@ -89,6 +89,7 @@ export default function App() {
   const [online, setOnline] = useState(false);
   const [driverAccess, setDriverAccess] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [startupError, setStartupError] = useState("");
   const [view, setView] = useState(() => window.location.pathname === "/reset-password" ? "reset" : (sessionStorage.getItem("vuelo-driver-view") || "home"));
   const [toast, setToast] = useState("");
   const [rideAlert, setRideAlert] = useState(null);
@@ -150,13 +151,27 @@ export default function App() {
 
 
   useEffect(() => {
-    (async () => { await redeemModeHandoff(); await init(); })();
+    let active = true;
+    const startupTimer = window.setTimeout(() => {
+      if (!active) return;
+      setStartupError("La conexión está tardando más de lo esperado. Revisá tu conexión e intentá nuevamente.");
+      setLoading(false);
+    }, 15000);
+
+    (async () => {
+      await redeemModeHandoff();
+      await init();
+      if (active) setStartupError("");
+    })().catch((error) => {
+      if (!active) return;
+      console.error("VUELO driver startup error:", error);
+      setStartupError(error?.message || "No pudimos iniciar la aplicación.");
+      setLoading(false);
+    }).finally(() => window.clearTimeout(startupTimer));
 
     const { data } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
-
       if (event === "PASSWORD_RECOVERY") setView("reset");
-
       if (newSession?.user) {
         loadProfile(newSession.user.id);
       } else {
@@ -165,7 +180,11 @@ export default function App() {
       }
     });
 
-    return () => data.subscription.unsubscribe();
+    return () => {
+      active = false;
+      window.clearTimeout(startupTimer);
+      data.subscription.unsubscribe();
+    };
   }, []);
 
 
@@ -185,23 +204,23 @@ export default function App() {
 
   async function init() {
     setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      setSession(data.session);
 
-    const { data } = await supabase.auth.getSession();
-    setSession(data.session);
+      const { data: st, error: settingsError } = await supabase
+        .from("platform_settings")
+        .select("*")
+        .eq("id", 1)
+        .maybeSingle();
+      if (settingsError) console.warn("VUELO settings unavailable:", settingsError);
+      setSettings(st || null);
 
-    const { data: st } = await supabase
-      .from("platform_settings")
-      .select("*")
-      .eq("id", 1)
-      .maybeSingle();
-
-    setSettings(st || null);
-
-    if (data.session?.user) {
-      await loadProfile(data.session.user.id);
+      if (data.session?.user) await loadProfile(data.session.user.id);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   async function loadProfile(id) {
@@ -229,6 +248,8 @@ export default function App() {
   }
 
   if (loading) return <Loading />;
+
+  if (startupError) return <div className="center-screen"><div className="blocked-card" style={{maxWidth:440,padding:26,margin:"24px auto",textAlign:"center"}}><img src={LOGO} alt="VUELO" style={{width:92,height:72,objectFit:"contain",margin:"0 auto 12px"}}/><h2>No pudimos cargar VUELO</h2><p role="alert">{startupError}</p><p>Podés volver a intentarlo. Si el problema continúa, contactá a soporte.</p><button type="button" onClick={()=>window.location.reload()}>Reintentar</button><a href={"mailto:"+SUPPORT}>{SUPPORT}</a></div></div>;
 
   if (view === "reset") return <Reset />;
 
