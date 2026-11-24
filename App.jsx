@@ -869,13 +869,9 @@ function Home({ profile, settings, online, setOnline, notify }) {
 
     setOnline(next);
 
-    const { error } = await supabase
-      .from("drivers")
-      .update({
-        is_online: next,
-        is_available: next,
-      })
-      .eq("id", driver.id);
+    const { error } = await supabase.rpc("vuelo_set_driver_availability", {
+      p_online: next,
+    });
 
     if (error) {
       notify(error.message);
@@ -1352,17 +1348,11 @@ function ActiveRide({ profile, notify }) {
 
     if (nextStatus === "completed") {
       window.dispatchEvent(new Event("vuelo-trip-completed"));
-      const { data: driver } = await supabase
-        .from("drivers")
-        .select("id")
-        .eq("user_id", profile.id)
-        .maybeSingle();
-
-      if (driver?.id) {
-        await supabase
-          .from("drivers")
-          .update({ is_available: true, is_online: true })
-          .eq("id", driver.id);
+      const { error: availabilityError } = await supabase.rpc("vuelo_set_driver_availability", {
+        p_online: true,
+      });
+      if (availabilityError) {
+        notify("El viaje terminó, pero no pudimos reconectar tu disponibilidad. Revisá tu estado.");
       }
     }
 
