@@ -655,12 +655,18 @@ function Loading() {
 }
 
 function Blocked({ title, text }) {
+  const driverApproval = title === "Acceso de conductor";
   return (
     <div className="center">
       <div className="auth-card center-card">
         <img src={LOGO} alt="Vuelo" />
         <h1>{title}</h1>
         <p>{text}</p>
+        {driverApproval && (
+          <a className="primary-btn" href={LANDING_URL} target="_blank" rel="noreferrer">
+            Solicitar aprobación como conductor
+          </a>
+        )}
         <a href={`mailto:${SUPPORT}`}>{SUPPORT}</a>
         <button onClick={() => supabase.auth.signOut()}>Cerrar sesión</button>
       </div>
