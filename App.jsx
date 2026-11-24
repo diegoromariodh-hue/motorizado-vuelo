@@ -196,6 +196,18 @@ export default function App() {
         if (ride.requested_at && Date.now() - Date.parse(ride.requested_at) > 10 * 60 * 1000) return;
         setRideAlert({ id: ride.id, pickup: ride.pickup_address, destination: ride.destination_address, price: ride.passenger_offer });
         if (navigator.vibrate) navigator.vibrate([180, 80, 180]);
+        if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+          const notice = new Notification("Nueva solicitud de viaje", {
+            body: (ride.pickup_address || "Origen") + " → " + (ride.destination_address || "Destino"),
+            icon: "/icon.svg",
+            tag: "vuelo-new-ride-" + ride.id,
+          });
+          notice.onclick = () => {
+            window.focus();
+            setView("requests");
+            notice.close();
+          };
+        }
         window.clearTimeout(rideAlertTimer.current);
         rideAlertTimer.current = window.setTimeout(() => setRideAlert(null), 10000);
       }).subscribe();
@@ -819,6 +831,32 @@ function Reset() {
 function Home({ profile, settings, online, setOnline, notify }) {
   const first = profile?.full_name?.split(" ")[0] || "Conductor";
   const [scheduled, setScheduled] = useState([]);
+  const [browserPermission, setBrowserPermission] = useState(
+    typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported"
+  );
+
+  async function enableBrowserNotifications() {
+    if (!("Notification" in window)) {
+      setBrowserPermission("unsupported");
+      notify("Este navegador no admite avisos de escritorio.");
+      return;
+    }
+    if (Notification.permission === "granted") {
+      setBrowserPermission("granted");
+      notify("Los avisos de este navegador ya están activados.");
+      return;
+    }
+    if (Notification.permission === "denied") {
+      setBrowserPermission("denied");
+      notify("Los avisos están bloqueados en el navegador. Habilítalos desde los permisos del sitio.");
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    setBrowserPermission(permission);
+    notify(permission === "granted"
+      ? "Avisos del navegador activados mientras VUELO esté abierto."
+      : "No se concedió permiso para mostrar avisos.");
+  }
 
   useEffect(() => {
     loadScheduledTrips();
@@ -917,6 +955,12 @@ function Home({ profile, settings, online, setOnline, notify }) {
           <Power size={18} />
           {online ? "Desconectarme" : "Conectarme"}
         </button>
+        <button type="button" className="browser-notification-btn" onClick={enableBrowserNotifications}
+          disabled={browserPermission === "unsupported" || browserPermission === "granted"}>
+          <Bell size={17} />
+          {browserPermission === "granted" ? "Avisos del navegador activados" : browserPermission === "denied" ? "Permitir avisos en el navegador" : "Activar avisos del navegador"}
+        </button>
+        <small className="browser-notification-note">Avisos de nuevas solicitudes cuando VUELO esté abierto en este navegador.</small>
       </div>
 
       <InstallReminder notify={notify} />
