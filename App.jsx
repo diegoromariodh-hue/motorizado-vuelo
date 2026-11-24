@@ -1712,10 +1712,7 @@ function Earnings({ profile, notify }) {
           <span>Comisión actual</span>
         </div>
 
-        <div className="stat-card">
-          <strong>C${(total * 0.1).toFixed(2)}</strong>
-          <span>Comisión teórica</span>
-        </div>
+
       </div>
 
       <div className="history-list">
