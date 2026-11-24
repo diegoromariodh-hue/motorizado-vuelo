@@ -312,7 +312,6 @@ export default function App() {
         </button>
       </header>
 
-      <div className="vuelo-mode-switch"><span className="vuelo-mode-current">Modo conductor</span><button className="vuelo-mode-button" type="button" disabled={switchingMode} onClick={switchMode}>{switchingMode ? "Cambiando…" : "Cambiar a pasajero →"}</button>{handoffError && <p className="vuelo-mode-error" role="alert">{handoffError}</p>}</div>
       <PostRideSurvey key={session.user.id} userId={session.user.id} notify={notify} />
 
       <main>
@@ -330,7 +329,7 @@ export default function App() {
         {view === "requests" && <RideRequests profile={profile} notify={notify} onNavigate={setView} />}
         {view === "active" && <ActiveRide profile={profile} notify={notify} />}
         {view === "earnings" && <Earnings profile={profile} notify={notify} />}
-        {view === "profile" && <Profile profile={profile} />}
+        {view === "profile" && <Profile profile={profile} switchMode={switchMode} switchingMode={switchingMode} handoffError={handoffError} />}
         <p className="page"><a href="https://vuelonicaragua.online/#privacidad" target="_blank" rel="noreferrer" style={{color:"#067451",textDecoration:"underline"}}>Aviso de privacidad</a></p>
       </main>
 
@@ -1777,7 +1776,7 @@ function Earnings({ profile, notify }) {
     </section>
   );
 }
-function Profile({ profile }) {
+function Profile({ profile, switchMode, switchingMode, handoffError }) {
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
@@ -1855,6 +1854,7 @@ function Profile({ profile }) {
 
         {msg && <div className="message profile-message">{msg}</div>}
 
+        <div className="profile-mode-card"><strong>Modo de uso</strong><p>Estás en modo conductor. Cambiá a pasajero para solicitar un viaje.</p><button type="button" disabled={switchingMode} onClick={switchMode}>{switchingMode?"Cambiando…":"Cambiar a modo pasajero"}</button>{handoffError && <p role="alert" className="vuelo-mode-error">{handoffError}</p>}</div>
         <div className="profile-grid">
           <div>
             <strong>{profile?.vuelo_id || "DRV-000000"}</strong>
