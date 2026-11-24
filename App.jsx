@@ -265,18 +265,15 @@ export default function App() {
 
   if (view === "reset") return <Reset />;
 
+  if (handoffAttempted && /no hay (un )?perfil de conductor aprobado/i.test(handoffError)) return <DriverApplicationScreen />;
+
   if (!session && handoffAttempted && handoffError) return <div className="center-screen"><div className="blocked-card" style={{maxWidth:420,padding:24,margin:"24px auto",textAlign:"center"}}><h2>No se pudo cambiar de modo</h2><p role="alert">{handoffError}</p><p>Tu sesión de la otra aplicación no se ha modificado.</p><button type="button" onClick={() => window.location.assign("https://misviajes.vuelonicaragua.online/")}>Regresar al modo anterior</button><button type="button" onClick={() => {setHandoffAttempted(false);setHandoffError("");}}>Iniciar sesión aquí</button></div></div>;
 
   if (!session) return <Auth />;
 
   const isStaff = ["super_admin", "admin", "operations"].includes(profile?.role);
   if (driverAccess !== true && !isStaff) {
-    return (
-      <Blocked
-        title="Acceso de conductor"
-        text="No hay un perfil de conductor aprobado para esta cuenta. Podés solicitar tu registro desde VUELO."
-      />
-    );
+    return <DriverApplicationScreen />;
   }
 
   if (profile?.is_active === false) {
@@ -2110,4 +2107,18 @@ function InfoCard({ icon, title, text }) {
       <p>{text}</p>
     </div>
   );
+}
+
+function DriverApplicationScreen() {
+  const url = LANDING_URL + "?solicitud=1";
+  return <main style={{maxWidth:1000,margin:"0 auto",padding:"18px 12px",background:"#f5faf6"}}>
+    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+      <img src={LOGO} alt="VUELO" style={{width:48,height:48,objectFit:"contain"}}/>
+      <div><strong>VUELO · Conductores</strong><br/><a href="https://misviajes.vuelonicaragua.online/">← Volver a Mis viajes</a></div>
+    </div>
+    <h1 style={{color:"#17372a",fontSize:"1.8rem",margin:"12px 0"}}>¡Tu próximo viaje empieza aquí!</h1>
+    <p>¿Querés conducir con VUELO? Completá tu solicitud. Si ya la enviaste, esperá la revisión de nuestro equipo.</p>
+    <iframe title="Solicitud de conductor VUELO" src={url} style={{width:"100%",height:"85vh",minHeight:580,border:0,borderRadius:18,background:"#fff"}} />
+    <p><a href={url}>Abrir formulario en pantalla completa</a></p>
+  </main>;
 }
