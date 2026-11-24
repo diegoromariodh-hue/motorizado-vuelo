@@ -173,7 +173,7 @@ export default function App() {
     if (!profile?.id || driverAccess !== true) return;
     const channel = supabase.channel("driver-global-new-ride-alerts")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "rides" }, ({ new: ride }) => {
-        if (!ride?.id || ride.driver_id || !["searching","negotiating"].includes(ride.status)) return;
+        if (!online || !ride?.id || ride.driver_id || !["searching","negotiating"].includes(ride.status)) return;
         if (ride.requested_at && Date.now() - Date.parse(ride.requested_at) > 10 * 60 * 1000) return;
         setRideAlert({ id: ride.id, pickup: ride.pickup_address, destination: ride.destination_address, price: ride.passenger_offer });
         if (navigator.vibrate) navigator.vibrate([180, 80, 180]);
@@ -181,7 +181,7 @@ export default function App() {
         rideAlertTimer.current = window.setTimeout(() => setRideAlert(null), 10000);
       }).subscribe();
     return () => { supabase.removeChannel(channel); window.clearTimeout(rideAlertTimer.current); };
-  }, [profile?.id, driverAccess]);
+  }, [profile?.id, driverAccess, online]);
 
   async function init() {
     setLoading(true);
