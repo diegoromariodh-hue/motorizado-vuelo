@@ -646,3 +646,16 @@ body{background:#f4f8f5;color:var(--black)}
  .app .notification-action{margin-left:18px;min-height:42px;flex:1 1 auto}
 }
 @media(prefers-reduced-motion:reduce){.app .notification-chevron{transition:none}}
+
+
+.browser-notification-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  min-height:44px;margin-top:10px;padding:10px 15px;border:1px solid rgba(255,255,255,.55);
+  border-radius:13px;background:rgba(255,255,255,.14);color:inherit;font-weight:750;
+}
+.browser-notification-btn:disabled{opacity:.82;cursor:default}
+.browser-notification-note{display:block;margin-top:7px;max-width:420px;font-size:.76rem;line-height:1.45;opacity:.86}
+@media(max-width:560px){
+ .browser-notification-btn{width:100%;min-height:46px}
+ .browser-notification-note{max-width:none}
+}
