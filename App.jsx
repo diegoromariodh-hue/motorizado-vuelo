@@ -107,22 +107,27 @@ export default function App() {
     if (switchingMode) return;
     setSwitchingMode(true);
     setHandoffError("");
+    const controller = new AbortController();
+    let timer;
+    const deadline = new Promise((_, reject) => { timer = window.setTimeout(() => { controller.abort(); reject(new Error("El cambio está tardando demasiado. Volvé a intentarlo.")); }, 12000); });
     try {
-      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+      const { data: refreshed, error: refreshError } = await Promise.race([supabase.auth.getSession(), deadline]);
       if (refreshError) throw new Error("Tu sesión venció. Cerrá sesión e ingresá nuevamente.");
       const currentSession = refreshed.session;
       if (!currentSession?.access_token) throw new Error("Iniciá sesión nuevamente.");
-      const res = await fetch(import.meta.env.VITE_SUPABASE_URL + "/functions/v1/vuelo-mode-handoff", {
-        method: "POST",
+      const res = await Promise.race([fetch(import.meta.env.VITE_SUPABASE_URL + "/functions/v1/vuelo-mode-handoff", {
+        method: "POST", signal: controller.signal,
         headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
           "Authorization": "Bearer " + currentSession.access_token },
         body: JSON.stringify({ action: "create", destination: "passenger" })
-      });
-      const payload = await res.json();
+      }), deadline]);
+      const payload = await Promise.race([res.json(), deadline]);
       if (!res.ok || !payload.url) throw new Error(payload.error || "No se pudo cambiar de modo.");
       window.location.assign(payload.url);
     } catch (error) {
       setHandoffError(error.message || "No se pudo cambiar de modo.");
+    } finally {
+      window.clearTimeout(timer);
       setSwitchingMode(false);
     }
   }
