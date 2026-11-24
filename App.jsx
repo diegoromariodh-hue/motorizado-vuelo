@@ -326,8 +326,9 @@ export default function App() {
           />
         )}
 
-        {view === "requests" && <><div className="page"><button className="refresh-btn" type="button" onClick={() => setView("delivery")}>Ver entregas de tiendas</button></div><RideRequests profile={profile} notify={notify} onNavigate={setView} /></>}
-        {view === "delivery" && <DriverDeliveryQueue key={session.user.id} userId={session.user.id} leave={() => setView("requests")} />}
+        {["requests", "delivery"].includes(view) && <RequestTypeSelector view={view} onNavigate={setView} />}
+        {view === "requests" && <RideRequests profile={profile} notify={notify} onNavigate={setView} />}
+        {view === "delivery" && <DriverDeliveryQueue key={session.user.id} userId={session.user.id} />}
         {view === "active" && <ActiveRide profile={profile} notify={notify} />}
         {view === "earnings" && <Earnings profile={profile} notify={notify} />}
         {view === "profile" && <Profile profile={profile} switchMode={switchMode} switchingMode={switchingMode} handoffError={handoffError} />}
@@ -342,7 +343,7 @@ export default function App() {
 
         <button className={["requests", "delivery"].includes(view) ? "active" : ""} aria-current={["requests", "delivery"].includes(view) ? "page" : undefined} onClick={() => setView("requests")}>
           <MapPin size={20} />
-          Viajes
+          Solicitudes
         </button>
 
         <button className={view === "active" ? "active" : ""} aria-current={view === "active" ? "page" : undefined} onClick={() => setView("active")}>
@@ -1908,7 +1909,17 @@ function DeliveryLocationSharing({ deliveryId }) {
   </div>;
 }
 
-function DriverDeliveryQueue({ userId, leave }) {
+function RequestTypeSelector({ view, onNavigate }) {
+  return <div className="page" role="group" aria-label="Tipo de solicitud" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+    {[["requests", "Viajes"], ["delivery", "Entregas"]].map(([value, label]) => (
+      <button key={value} type="button" className="refresh-btn" aria-pressed={view === value}
+        style={view === value ? { background: "#087a4b", color: "#fff" } : undefined}
+        onClick={() => onNavigate(value)}>{label}</button>
+    ))}
+  </div>;
+}
+
+function DriverDeliveryQueue({ userId }) {
   const [eligible, setEligible] = useState(false);
   const [queue, setQueue] = useState([]);
   const [mine, setMine] = useState([]);
@@ -1959,7 +1970,6 @@ function DriverDeliveryQueue({ userId, leave }) {
 
   return <section className="page">
     <div className="profile-card">
-      <button type="button" className="refresh-btn" onClick={leave}>Volver a solicitudes de viajes</button>
       <h1>Entregas</h1>
       <button type="button" className="refresh-btn" onClick={load}>Actualizar</button>
       {loading && <p role="status">Cargando entregas…</p>}
