@@ -326,7 +326,8 @@ export default function App() {
           />
         )}
 
-        {view === "requests" && <RideRequests profile={profile} notify={notify} onNavigate={setView} />}
+        {view === "requests" && <><div className="page"><button className="refresh-btn" type="button" onClick={() => setView("delivery")}>Ver entregas de tiendas</button></div><RideRequests profile={profile} notify={notify} onNavigate={setView} /></>}
+        {view === "delivery" && <DriverDeliveryQueue key={session.user.id} userId={session.user.id} leave={() => setView("requests")} />}
         {view === "active" && <ActiveRide profile={profile} notify={notify} />}
         {view === "earnings" && <Earnings profile={profile} notify={notify} />}
         {view === "profile" && <Profile profile={profile} switchMode={switchMode} switchingMode={switchingMode} handoffError={handoffError} />}
@@ -339,7 +340,7 @@ export default function App() {
           Inicio
         </button>
 
-        <button className={view === "requests" ? "active" : ""} aria-current={view === "requests" ? "page" : undefined} onClick={() => setView("requests")}>
+        <button className={["requests", "delivery"].includes(view) ? "active" : ""} aria-current={["requests", "delivery"].includes(view) ? "page" : undefined} onClick={() => setView("requests")}>
           <MapPin size={20} />
           Viajes
         </button>
@@ -1779,6 +1780,134 @@ function EmailMarketingPreference({profile}){
  async function toggle(){setSaving(true);setMessage("");const {data,error}=await supabase.functions.invoke("vuelo-marketing-preferences",{body:{action:enabled?"unsubscribe":"subscribe",audience:"driver"}});setSaving(false);if(error){setMessage("No pudimos guardar el cambio. Intentá nuevamente.");return;}setEnabled(!enabled);setMessage(data?.message||"Preferencia actualizada.");}
  return <div className="profile-section email-preference"><h2>Novedades de VUELO</h2><p>Recibí mensajes breves, promociones y novedades. Sin saturarte.</p><button type="button" onClick={toggle} disabled={loading||saving}>{loading?"Cargando…":saving?"Guardando…":enabled?"Dejar de recibir novedades":"Quiero recibir novedades"}</button>{message&&<small role="status">{message}</small>}<small>Podés cambiar esta preferencia cuando quieras.</small></div>
 }
+const DELIVERY_STATUS = {
+  pending: "Buscando motorizado", accepted: "Motorizado asignado",
+  picked_up: "En camino", delivered: "Entregada", cancelled: "Cancelada",
+};
+async function optimizeProfileImage(file) {
+  if (!file.size || file.size > 24 * 1024 * 1024) {
+    throw new Error("Elegí una foto de hasta 24 MB.");
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    try {
+      await image.decode();
+    } catch {
+      throw new Error("No pudimos abrir la foto. Probá con JPG, PNG o WebP.");
+    }
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("No pudimos preparar la foto.");
+    for (const [side, quality] of [[768, 0.84], [640, 0.75], [512, 0.68], [384, 0.62]]) {
+      const scale = Math.min(1, side / Math.max(image.naturalWidth, image.naturalHeight));
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      let blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", quality));
+      if (blob?.type !== "image/webp") {
+        context.globalCompositeOperation = "destination-over";
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+      }
+      if (["image/webp", "image/jpeg"].includes(blob?.type) && blob.size <= 350 * 1024) {
+        return { blob, extension: blob.type === "image/webp" ? "webp" : "jpg" };
+      }
+    }
+    throw new Error("No pudimos reducir el peso de esta foto.");
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function DriverDeliveryQueue({ userId, leave }) {
+  const [eligible, setEligible] = useState(false);
+  const [queue, setQueue] = useState([]);
+  const [mine, setMine] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+
+  async function load() {
+    const [access, offered, assigned] = await Promise.all([
+      supabase.from("drivers").select("delivery_couriers(enabled)").eq("user_id", userId).maybeSingle(),
+      supabase.rpc("vuelo_delivery_queue"),
+      supabase.from("store_deliveries").select("id,store_name,pickup_address,pickup_reference,pickup_lat,pickup_lng,store_whatsapp,recipient_name,recipient_whatsapp,destination_address,destination_lat,destination_lng,instructions,fee,status")
+        .eq("courier_user_id", userId).order("created_at", { ascending: false }).limit(30),
+    ]);
+    setLoading(false);
+    if (access.error || offered.error || assigned.error) {
+      setMessage("No pudimos cargar las entregas. Intentá de nuevo.");
+      return;
+    }
+    setEligible(Boolean(access.data?.delivery_couriers?.enabled));
+    setQueue(offered.data);
+    setMine(assigned.data);
+  }
+
+  useEffect(() => {
+    void load();
+    const timer = setInterval(load, 15000);
+    return () => clearInterval(timer);
+  }, [userId]);
+
+  async function act(id, action) {
+    if (busy) return;
+    setBusy(true);
+    const { data, error } = await supabase.rpc("vuelo_delivery_action", { p_id: id, p_action: action });
+    setBusy(false);
+    setMessage(error ? (error.code === "P0001" ? error.message : "No pudimos actualizar la entrega.") : DELIVERY_STATUS[data]);
+    await load();
+  }
+
+  const active = mine.find((job) => ["accepted", "picked_up"].includes(job.status));
+  function whatsApp(phone) {
+    const digits = phone.replace(/\D/g, "");
+    return "https://wa.me/" + (digits.length === 8 ? "505" + digits : digits);
+  }
+  function map(lat, lng) {
+    return "https://www.openstreetmap.org/?mlat=" + lat + "&mlon=" + lng + "#map=16/" + lat + "/" + lng;
+  }
+
+  return <section className="page">
+    <div className="profile-card">
+      <button type="button" className="refresh-btn" onClick={leave}>Volver a solicitudes de viajes</button>
+      <h1>Entregas</h1>
+      <button type="button" className="refresh-btn" onClick={load}>Actualizar</button>
+      {loading && <p role="status">Cargando entregas…</p>}
+      {message && <p role="status">{message}</p>}
+      {!loading && !eligible && !active && <p>SuperAdmin debe habilitar tu cuenta para recibir entregas en moto.</p>}
+    </div>
+    {active && <article className="request-card">
+      <h2>{active.store_name}</h2>
+      <p><strong>{DELIVERY_STATUS[active.status]}</strong> · C$ {Number(active.fee).toFixed(2)}</p>
+      <p><strong>Recogida</strong><br />{active.pickup_address}{active.pickup_reference && " · " + active.pickup_reference}</p>
+      <p><a href={map(active.pickup_lat, active.pickup_lng)} target="_blank" rel="noreferrer">Mapa de recogida</a> · <a href={whatsApp(active.store_whatsapp)} target="_blank" rel="noreferrer">WhatsApp de la tienda</a></p>
+      <p><strong>Entrega para {active.recipient_name}</strong><br />{active.destination_address}</p>
+      <p><a href={map(active.destination_lat, active.destination_lng)} target="_blank" rel="noreferrer">Mapa del destino</a> · <a href={whatsApp(active.recipient_whatsapp)} target="_blank" rel="noreferrer">WhatsApp del destinatario</a></p>
+      {active.instructions && <p>{active.instructions}</p>}
+      <button type="button" disabled={busy} onClick={() => act(active.id, active.status === "accepted" ? "pickup" : "deliver")}>
+        {active.status === "accepted" ? "Marcar paquete recogido" : "Marcar entrega completada"}
+      </button>
+    </article>}
+    {eligible && !active && <div className="profile-card">
+      <h2>Entregas disponibles</h2>
+      {!queue.length && <p>No hay solicitudes disponibles por ahora.</p>}
+      {queue.map((job) => <article key={job.id} className="request-card">
+        <h3>{job.store_name}</h3><p><strong>C$ {Number(job.fee).toFixed(2)}</strong></p>
+        <p><a href={map(job.pickup_lat, job.pickup_lng)} target="_blank" rel="noreferrer">Zona de recogida</a> · <a href={map(job.destination_lat, job.destination_lng)} target="_blank" rel="noreferrer">Zona de entrega</a></p>
+        <button type="button" disabled={busy} onClick={() => act(job.id, "accept")}>Aceptar entrega</button>
+      </article>)}
+    </div>}
+    {mine.some((job) => job.id !== active?.id) && <div className="profile-card">
+      <h2>Historial de entregas</h2>
+      {mine.filter((job) => job.id !== active?.id).map((job) => <p key={job.id}>{job.store_name} · {DELIVERY_STATUS[job.status]} · C$ {Number(job.fee).toFixed(2)}</p>)}
+    </div>}
+  </section>;
+}
+
 function Profile({ profile, switchMode, switchingMode, handoffError }) {
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
   const [uploading, setUploading] = useState(false);
@@ -1793,22 +1922,18 @@ function Profile({ profile, switchMode, switchingMode, handoffError }) {
       return;
     }
 
-    if (file.size > 1024 * 1024) {
-      setMsg("La imagen debe pesar máximo 1 MB.");
-      return;
-    }
-
     setUploading(true);
     setMsg("");
 
     try {
-      const fileExt = file.name.split(".").pop();
+      const { blob, extension: fileExt } = await optimizeProfileImage(file);
       const filePath = `${profile.id}/driver-avatar-${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filePath, file, {
+        .upload(filePath, blob, {
           cacheControl: "3600",
+          contentType: blob.type,
           upsert: true,
         });
 
