@@ -290,7 +290,7 @@ export default function App() {
 
   return (
     <div className="app">
-      {toast && <div className="toast" role="status">✅ {toast}</div>}
+      {toast && <div className="toast" role="status">{toast}</div>}
       {rideAlert && <div className="global-ride-alert" role="alert">
         <span className="global-ride-alert-icon"><Bell size={20}/></span>
         <div className="global-ride-alert-copy"><strong>¡Nueva solicitud de viaje!</strong><small>{rideAlert.pickup} → {rideAlert.destination}</small><b>C${rideAlert.price}</b></div>
@@ -420,20 +420,21 @@ function RideChat({ rideId, userId }) {
     }
   }
 
-  return <section className="rating-box" aria-label="Chat del viaje">
+  return <section className="rating-box ride-chat" aria-label="Chat del viaje">
     <h3>Chat del viaje</h3>
     {readError && <p role="status">No pudimos actualizar el chat.</p>}
     {messages.length===0 && !readError && <p>Usá este chat para coordinar la recogida.</p>}
-    {messages.length>0 && <ul role="log" aria-label="Mensajes" style={{listStyle:"none",padding:0,maxHeight:260,overflowY:"auto"}}>
-      {messages.map((item)=><li key={item.id} style={{background:item.sender_id===userId?"#dff5ec":"#fff",borderRadius:12,padding:10,marginBottom:6,overflowWrap:"anywhere",whiteSpace:"pre-wrap"}}>
+    {messages.length>0 && <ul role="log" aria-label="Mensajes" className="ride-chat-log">
+      {messages.map((item)=><li key={item.id} className={"ride-chat-bubble"+(item.sender_id===userId?" mine":"")}>
         <strong>{item.sender_id===userId?"Vos":"Pasajero"}</strong>
         <div>{item.message}</div>
+        {item.created_at && <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleTimeString("es-NI",{hour:"numeric",minute:"2-digit"})}</time>}
       </li>)}
     </ul>}
     <form onSubmit={send}>
-      <div className="row-actions">
+      <div className="ride-chat-quick">
         {["Voy en camino","No encuentro la dirección","Estoy en el punto"].map((message)=><button key={message} type="button" disabled={sending}
-          onClick={()=>setDraft(message)} style={{margin:3,padding:8,borderRadius:10,border:"1px solid #a9d4c3",background:"#fff",color:"#067451"}}>{message}</button>)}
+          onClick={()=>setDraft(message)}>{message}</button>)}
       </div>
       <textarea aria-label="Mensaje del viaje" placeholder="Escribí un mensaje" maxLength={500}
         value={draft} onChange={(event)=>setDraft(event.target.value)} disabled={sending} />
