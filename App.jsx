@@ -1822,6 +1822,92 @@ async function optimizeProfileImage(file) {
   }
 }
 
+function DeliveryLocationSharing({ deliveryId }) {
+  const [sharing, setSharing] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [notice, setNotice] = useState("");
+  const pending = React.useRef(null);
+  const stopped = React.useRef(false);
+
+  useEffect(() => {
+    if (!sharing || !navigator.geolocation) return;
+    let active = true;
+    let lastSent = 0;
+    let lastFix = null;
+
+    const sendPosition = async (coords) => {
+      if (!active || stopped.current || pending.current || Date.now() - lastSent < 7000) return;
+      if (coords.accuracy > 500) {
+        setNotice("Buscando una señal GPS más precisa…");
+        return;
+      }
+      lastSent = Date.now();
+      const operation = supabase.rpc("vuelo_share_delivery_position", {
+        p_delivery: deliveryId, p_lat: coords.latitude, p_lng: coords.longitude, p_accuracy: coords.accuracy,
+      }).then((result) => result);
+      pending.current = operation;
+      try {
+        const { data, error } = await operation;
+        if (active && !stopped.current) {
+          setNotice(error || !data ? "No pudimos actualizar el mapa. Revisá la conexión y la señal GPS." : "Ubicación compartida en vivo.");
+        }
+      } finally {
+        if (pending.current === operation) pending.current = null;
+      }
+    };
+
+    const onPosition = ({ coords, timestamp }) => {
+      lastFix = timestamp;
+      void sendPosition(coords);
+    };
+    const onError = (error) => {
+      if (!active || stopped.current) return;
+      setNotice(error.code === 1 ? "Permití el acceso a la ubicación en tu navegador para compartirla." : "No pudimos obtener tu ubicación. Revisá el GPS.");
+      if (error.code === 1) setSharing(false);
+    };
+    const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 8000 };
+    const watch = navigator.geolocation.watchPosition(onPosition, onError, options);
+    const timer = setInterval(() => {
+      if (!lastFix || Date.now() - lastFix > 18000) navigator.geolocation.getCurrentPosition(onPosition, onError, options);
+    }, 18000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      navigator.geolocation.clearWatch(watch);
+    };
+  }, [deliveryId, sharing]);
+
+  function start() {
+    if (!navigator.geolocation) {
+      setNotice("Este dispositivo no ofrece ubicación desde el navegador.");
+      return;
+    }
+    stopped.current = false;
+    setNotice("Buscando señal GPS…");
+    setSharing(true);
+  }
+
+  async function stop() {
+    stopped.current = true;
+    setSharing(false);
+    setStopping(true);
+    await pending.current;
+    const { error } = await supabase.rpc("vuelo_share_delivery_position", {
+      p_delivery: deliveryId, p_lat: null, p_lng: null, p_accuracy: null,
+    });
+    setStopping(false);
+    setNotice(error ? "Se detuvo el envío de ubicación. El último punto desaparecerá del mapa en breve." : "Dejaste de compartir tu ubicación.");
+  }
+
+  return <div>
+    <p>Mantené abierta esta pantalla durante la entrega para que el cliente pueda ver tu ubicación.</p>
+    <button type="button" disabled={stopping} onClick={sharing ? stop : start}>
+      {stopping ? "Deteniendo…" : sharing ? "Dejar de compartir ubicación" : "Compartir ubicación en vivo"}
+    </button>
+    {notice && <p role="status">{notice}</p>}
+  </div>;
+}
+
 function DriverDeliveryQueue({ userId, leave }) {
   const [eligible, setEligible] = useState(false);
   const [queue, setQueue] = useState([]);
@@ -1834,7 +1920,7 @@ function DriverDeliveryQueue({ userId, leave }) {
     const [access, offered, assigned] = await Promise.all([
       supabase.from("drivers").select("delivery_couriers(enabled)").eq("user_id", userId).maybeSingle(),
       supabase.rpc("vuelo_delivery_queue"),
-      supabase.from("store_deliveries").select("id,store_name,pickup_address,pickup_reference,pickup_lat,pickup_lng,store_whatsapp,recipient_name,recipient_whatsapp,destination_address,destination_lat,destination_lng,instructions,fee,status")
+      supabase.from("store_deliveries").select("id,store_name,pickup_address,pickup_reference,pickup_lat,pickup_lng,store_whatsapp,recipient_name,recipient_whatsapp,destination_address,destination_lat,destination_lng,instructions,fee,distance_km,status")
         .eq("courier_user_id", userId).order("created_at", { ascending: false }).limit(30),
     ]);
     setLoading(false);
@@ -1882,12 +1968,13 @@ function DriverDeliveryQueue({ userId, leave }) {
     </div>
     {active && <article className="request-card">
       <h2>{active.store_name}</h2>
-      <p><strong>{DELIVERY_STATUS[active.status]}</strong> · C$ {Number(active.fee).toFixed(2)}</p>
+      <p><strong>{DELIVERY_STATUS[active.status]}</strong> · C$ {Number(active.fee).toFixed(2)}{active.distance_km != null && ` · ${Number(active.distance_km).toFixed(2)} km`}</p>
       <p><strong>Recogida</strong><br />{active.pickup_address}{active.pickup_reference && " · " + active.pickup_reference}</p>
       <p><a href={map(active.pickup_lat, active.pickup_lng)} target="_blank" rel="noreferrer">Mapa de recogida</a> · <a href={whatsApp(active.store_whatsapp)} target="_blank" rel="noreferrer">WhatsApp de la tienda</a></p>
       <p><strong>Entrega para {active.recipient_name}</strong><br />{active.destination_address}</p>
       <p><a href={map(active.destination_lat, active.destination_lng)} target="_blank" rel="noreferrer">Mapa del destino</a> · <a href={whatsApp(active.recipient_whatsapp)} target="_blank" rel="noreferrer">WhatsApp del destinatario</a></p>
       {active.instructions && <p>{active.instructions}</p>}
+      {active.status === "picked_up" && <DeliveryLocationSharing key={active.id} deliveryId={active.id} />}
       <button type="button" disabled={busy} onClick={() => act(active.id, active.status === "accepted" ? "pickup" : "deliver")}>
         {active.status === "accepted" ? "Marcar paquete recogido" : "Marcar entrega completada"}
       </button>
