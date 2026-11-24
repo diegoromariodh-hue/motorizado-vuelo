@@ -696,3 +696,35 @@ body{background:#f4f8f5;color:var(--black)}
 .app .section-title h2{font-size:clamp(1.15rem,4vw,1.45rem);line-height:1.25}
 .app .notification-item-copy p{font-weight:400}
 @media(prefers-reduced-motion:reduce){.app .spin{animation:none}}
+
+
+/* Driver contrast and interaction pass */
+:root{--gray:#465e51;--coral-dark:#b52b25}
+.app .welcome-card button{background:#fff!important;color:#075c38!important;box-shadow:none}
+.app .welcome-card .danger-btn{background:#a92323!important;color:#fff!important}
+.app .welcome-card .browser-notification-btn{background:#06472f!important;color:#fff!important;border:1px solid #a8d7bc}
+.app .browser-notification-note{color:#fff;opacity:1}
+.app .request-card button{background:#075c38!important;color:#fff!important;box-shadow:none}
+.app .request-card>span{background:#fff0ed;color:#a92323}
+.app .notification-count{background:#b52b25;color:#fff}
+.app .global-ride-alert-copy b,.app .global-ride-alert-icon{color:#a92323}
+.app .bottom-nav button{color:#465e51!important;margin:0;min-height:54px}
+.app .bottom-nav button.active{color:#075c38!important;margin:0}
+.app .bottom-nav button.active svg{stroke:#075c38}
+.app .status-current,.app .send-rating-btn,.app .share-card button{background:#075c38;color:#fff}
+.app .status-next{background:#e8f7ee;color:#075c38;border:1px solid #9bbdaa}
+.app .status-finish{background:#a92323;color:#fff}
+.app .upload-avatar-btn,.app .maps-btn,.app .rating-stars button{color:#075c38}
+.app .rating-stars .star-selected{color:#78350f}
+.app .passenger-mini-card>div,.app .passenger-detail-card>div{background:#075c38;color:#fff}
+.app .profile-grid span,.app .notification-summary-main small,.app .notification-item-copy p,.app .notification-item-copy>small{color:#465e51}
+.app .profile-mode-card{display:grid;gap:10px;text-align:left;background:#f0f7f2;border:1px solid #c4dacf;border-radius:14px;padding:16px}
+.app .profile-mode-card p{margin:0;color:#465e51}
+.app .profile-mode-card button{min-height:46px;background:#075c38;color:#fff;border:0;border-radius:11px;padding:12px;font-weight:750}
+.app .profile-mode-card .vuelo-mode-error{color:#a92323}
+.app input::placeholder,.app textarea::placeholder,.auth-card input::placeholder{color:#526b5d;opacity:1}
+.app .rating-stars{grid-template-columns:repeat(5,minmax(0,1fr))}
+.app .quick-grid{gap:10px}
+.app .welcome-card p{color:#fff}
+.app .welcome-card button:focus-visible,.app .topbar button:focus-visible{outline-color:#fff}
+@media(max-width:560px){.app .page{width:calc(100% - 24px);margin:12px auto 18px}.app .quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.app .quick-grid .info-card{padding:12px;min-width:0}.app .bottom-nav button{font-size:.72rem}}
