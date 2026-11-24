@@ -569,3 +569,41 @@ body{background:#f4f8f5;color:var(--black)}
 .app .vuelo-mode-button{font-size:.74rem!important;font-weight:700!important;color:#087a4b!important;background:transparent!important;border:1px solid #cfe2d5!important;border-radius:999px!important;padding:6px 10px!important;min-height:30px;opacity:.82;box-shadow:none!important}
 .app .vuelo-mode-button:hover{background:#e8f7ee!important;opacity:1}
 @media(max-width:560px){.app .vuelo-mode-switch{margin:6px auto 0}.app .vuelo-mode-button{padding:5px 9px!important}}
+
+
+/* Perfil conductor: tarjetas y acciones con separación uniforme */
+.app .profile-card{display:grid;gap:14px;text-align:center;overflow:hidden}
+.app .profile-card>.profile-photo,.app .profile-card>.avatar{margin:0 auto 2px}
+.app .profile-card h1{margin:2px 0 0;font-size:clamp(1.4rem,5vw,1.9rem);line-height:1.15;overflow-wrap:anywhere}
+.app .profile-card>p{margin:0;overflow-wrap:anywhere}
+.app .profile-card .upload-avatar-btn{margin:8px auto 2px;min-height:48px;padding:12px 18px;max-width:100%;white-space:normal;text-align:center}
+.app .profile-card .profile-message{margin:4px 0 0;text-align:left}
+.app .profile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:6px}
+.app .profile-grid>div{min-width:0;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:15px 10px;border:1px solid #e2eee5;border-radius:15px;background:linear-gradient(145deg,#f6faf7,#edf6ef)}
+.app .profile-grid strong{font-size:clamp(.9rem,3vw,1.05rem);line-height:1.3;overflow-wrap:anywhere;color:#075c38}
+.app .profile-grid span{font-size:.78rem;line-height:1.35;color:#607368}
+.app .profile-card button,.app .profile-card label{touch-action:manipulation}
+.app .profile-card button:focus-visible,.app .profile-card label:focus-within{outline:3px solid #f0443866;outline-offset:3px}
+@media(max-width:560px){
+ .app .profile-card{padding:17px;gap:12px}
+ .app .profile-grid{grid-template-columns:1fr;gap:9px}
+ .app .profile-grid>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.8fr);align-items:center;text-align:left;padding:13px 14px}
+ .app .profile-grid strong{text-align:right}
+ .app .profile-card .upload-avatar-btn{width:100%}
+}
+
+/* Global action spacing: avoid touching/overlapping buttons in cards and forms */
+.app button,.app a[role="button"]{line-height:1.35}
+.app button:not(.icon-btn):not(.install-close):not(.profile-avatar-edit){max-width:100%}
+.app .row-actions,.app .action-grid,.app .status-flow,.app .emergency-actions,.app .install-actions,.app .offer-actions{
+ display:flex;flex-wrap:wrap;align-items:stretch;gap:12px
+}
+.app .row-actions>* ,.app .action-grid>* ,.app .status-flow>* ,.app .emergency-actions>* ,.app .install-actions>* ,.app .offer-actions>*{min-width:0}
+.app .row-actions button,.app .action-grid button,.app .status-flow button,.app .emergency-actions a,.app .install-actions button,.app .offer-actions button{margin:0}
+.app .card-actions,.app .button-group,.app .form-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:14px}
+.app .card-actions>* ,.app .button-group>* ,.app .form-actions>*{flex:1 1 150px;min-width:0}
+.app .profile-page .profile-driver-cta{margin:0}
+@media(max-width:560px){
+ .app .row-actions,.app .action-grid,.app .status-flow,.app .emergency-actions,.app .install-actions,.app .offer-actions,.app .card-actions,.app .button-group,.app .form-actions{gap:10px}
+ .app .row-actions>* ,.app .action-grid>* ,.app .status-flow>* ,.app .emergency-actions>* ,.app .install-actions>* ,.app .offer-actions>*{flex:1 1 100%}
+}
