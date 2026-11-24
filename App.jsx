@@ -1773,6 +1773,12 @@ function Earnings({ profile, notify }) {
     </section>
   );
 }
+function EmailMarketingPreference({profile}){
+ const [enabled,setEnabled]=useState(false),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[message,setMessage]=useState("");
+ useEffect(()=>{let active=true;(async()=>{const {data,error}=await supabase.from("marketing_subscribers").select("id,unsubscribed_at").eq("user_id",profile.id).eq("audience","driver").maybeSingle();if(!active)return;setEnabled(Boolean(data&&!data.unsubscribed_at));if(error)setMessage("No pudimos consultar tus preferencias.");setLoading(false)})();return()=>{active=false}},[profile.id]);
+ async function toggle(){setSaving(true);setMessage("");const {data,error}=await supabase.functions.invoke("vuelo-marketing-preferences",{body:{action:enabled?"unsubscribe":"subscribe",audience:"driver"}});setSaving(false);if(error){setMessage("No pudimos guardar el cambio. Intentá nuevamente.");return;}setEnabled(!enabled);setMessage(data?.message||"Preferencia actualizada.");}
+ return <div className="profile-section email-preference"><h2>Novedades de VUELO</h2><p>Recibí mensajes breves, promociones y novedades. Sin saturarte.</p><button type="button" onClick={toggle} disabled={loading||saving}>{loading?"Cargando…":saving?"Guardando…":enabled?"Dejar de recibir novedades":"Quiero recibir novedades"}</button>{message&&<small role="status">{message}</small>}<small>Podés cambiar esta preferencia cuando quieras.</small></div>
+}
 function Profile({ profile, switchMode, switchingMode, handoffError }) {
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
   const [uploading, setUploading] = useState(false);
@@ -1852,6 +1858,7 @@ function Profile({ profile, switchMode, switchingMode, handoffError }) {
         {msg && <div className="message profile-message">{msg}</div>}
 
         <div className="profile-mode-card"><strong>Modo de uso</strong><p>Estás en modo conductor. Cambiá a pasajero para solicitar un viaje.</p><button type="button" disabled={switchingMode} onClick={switchMode}>{switchingMode?"Cambiando…":"Cambiar a modo pasajero"}</button>{handoffError && <p role="alert" className="vuelo-mode-error">{handoffError}</p>}</div>
+        <EmailMarketingPreference profile={profile}/>
         <div className="profile-grid">
           <div>
             <strong>{profile?.vuelo_id || "DRV-000000"}</strong>
