@@ -663,7 +663,7 @@ function Blocked({ title, text }) {
         <h1>{title}</h1>
         <p>{text}</p>
         {driverApproval && (
-          <a className="primary-btn" href={LANDING_URL} target="_blank" rel="noreferrer">
+          <a href={LANDING_URL} target="_blank" rel="noreferrer" style={{display:"block",width:"100%",boxSizing:"border-box",padding:"14px 18px",margin:"18px 0",borderRadius:12,background:"#0b6848",color:"#fff",fontWeight:750,textAlign:"center",textDecoration:"none"}}>
             Solicitar aprobación como conductor
           </a>
         )}
